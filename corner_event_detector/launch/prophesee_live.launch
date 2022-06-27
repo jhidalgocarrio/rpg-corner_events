@@ -1,0 +1,50 @@
+<launch>
+
+  <!-- camera driver -->
+  <node pkg="prophesee_ros_driver" type="prophesee_ros_publisher" name="prophesee_ros_publisher" respawn="false" output="screen">
+    <param name="camera_name" value="camera" />
+    <param name="publish_cd" value="true" />
+    <param name="publish_graylevels" value="true" />
+    <param name="publish_imu" value="true" />
+
+    <!-- Path to the file with the camera settings -->
+    <param name="bias_file" value="$(find prophesee_ros_driver)/cfg/gen3_low_sensitive_settings.bias" />
+
+    <!-- Maximum event rate in kEv/s -->
+    <param name="max_event_rate" value="0" />
+
+    <!-- Streaming rate in Hz fo the events array. By default is 64 microsendos or max 100 events in array -->
+    <param name="event_streaming_rate" value="30" />
+    
+    <!-- Graylevel frame rate in fps -->
+    <param name="graylevel_frame_rate" value="30" />
+  </node>
+
+  <!-- feature detector -->
+  <node name="corner_event_detector" pkg="corner_event_detector" type="detector" output="screen">
+    <param name="feature_type" value="fast"/>
+  </node>
+
+  <!-- corner visualization -->
+  <node name="dvs_renderer_corners" pkg="dvs_renderer" type="dvs_renderer">
+    <param name="display_method" value="red-blue"/>
+    <param name="num_event_msgs" value="5"/>
+    <remap from="events" to="/feature_events" />
+    <remap from="image" to="/prophesee/camera/graylevel_image" />
+    <remap from="camera_info" to="/prophesee/camera/camera_info" />
+    <remap from="dvs_rendering" to="dvs_rendering_corners"/>
+  </node>
+
+  <!-- event visualization -->
+  <node name="dvs_renderer_events" pkg="dvs_renderer" type="dvs_renderer">
+    <param name="display_method" value="red-blue"/>
+    <param name="num_event_msgs" value="1"/>
+    <remap from="events" to="/dvs/events" />
+    <remap from="image" to="/dvs/image_raw" />
+    <remap from="camera_info" to="/dvs/camera_info" />
+  </node>
+
+  <!-- display -->
+  <node name="rqt_gui_corners" pkg="rqt_gui" type="rqt_gui" args="--perspective-file $(find corner_event_detector)/cfg/viewers.perspective" />
+
+</launch>
